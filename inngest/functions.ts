@@ -2,6 +2,9 @@ import { inngest } from "./client";
 import ImageKit from "imagekit";
 import OpenAI from "openai"
 import { generateImageFromWorker } from "@/lib/ai-utils";
+import { AiThumbnailTable } from "@/configs/schema";
+import { db } from "@/configs/db";
+import moment from "moment";
 // export const helloWorld = inngest.createFunction(
 //   { id: "hello-world" },
 //   { event: "test/hello.world" },
@@ -123,10 +126,21 @@ export const GenerateAiThumbnail=inngest.createFunction(
       return upload.url;
     });
 
-    // --- FINAL RETURN ---
-    return { 
-      success: true, 
-      imageUrl: finalImageUrl 
-    };
+    // Save record to database
+
+    const SaveToDB=await step.run('SaveToDb',async()=>{
+      //@ts-ignore
+      const result=await db.insert(AiThumbnailTable).values({
+        userInput:userInput,
+        thumbnailUrl:finalImageUrl,
+        createdOn:moment().format('DD-mm-yyyy'),
+        refImage:uploadImageUrls,
+        userEmail:userEmail  
+        //@ts-ignore
+      }).returning(AiThumbnailTable)
+    return result
+    })
+    
+   return SaveToDB;
   }
 )

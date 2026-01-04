@@ -5,3 +5,12 @@ export const usersTable = pgTable("users", {
     email: varchar({ length: 255 }).notNull().unique(),
 
 });
+
+export const AiThumbnailTable=pgTable('thumbnails',{
+    id:integer().primaryKey().generatedAlwaysAsIdentity(),
+    userInput:varchar(),
+    thumbnailUrl:varchar(),
+    refImage:varchar(),
+    userEmail:varchar().references(()=>usersTable.email),
+    createdOn:varchar()
+})
