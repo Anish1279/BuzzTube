@@ -1,7 +1,8 @@
 "use client"
 
+import { RunStatus } from '@/services/GlobalApi';
 import axios from 'axios';
-import { ArrowUp, ImagePlus, User, X } from 'lucide-react'
+import { ArrowUp, ImagePlus, Loader2, User, X } from 'lucide-react'
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react'
 
@@ -11,6 +12,8 @@ function AiThumbnailGenerator() {
   const [faceImage, setFaceImage] = useState<File | null>(null);
   const [referenceImagePreview, setReferenceImagePreview] = useState<string | null>(null);
   const [faceImagePreview, setFaceImagePreview] = useState<string | null>(null);
+  const [loading,setLoading]=useState(false);
+  const [outputThumbnailImage,setOutputThumbnailImage]=useState('');
 
   const onHandleFileChange = (field: string, e: any) => {
     const selectedFile = e.target.files?.[0];
@@ -47,15 +50,56 @@ function AiThumbnailGenerator() {
     }
   }, [faceImagePreview]);
 
-  const onSubmit = async() => {
-  const formData = new FormData();
-  userInput && formData.append('userInput',userInput);
-  referenceImage && formData.append('refImage',referenceImage),
-  faceImage && formData.append('faceImage',faceImage);
+ const onSubmit = async () => {
+    setLoading(true);
+    const formData = new FormData();
+    userInput && formData.append('userInput', userInput);
+    referenceImage && formData.append('refImage', referenceImage);
+    faceImage && formData.append('faceImage', faceImage);
 
-  //Post API call
-  const result=await axios.post('/api/generate-thumbnail',formData);
-  console.log(result.data);
+    try {
+      // 1. Send the request
+      const result = await axios.post('/api/generate-thumbnail', formData);
+      console.log("Triggered Run ID:", result.data.runId);
+
+      // 2. Poll for results
+      const runId = result.data.runId;
+      
+      while (true) {
+        // We get the array directly because GlobalApi returns json.data
+        const runStatusArray = await RunStatus(runId); 
+        
+        // Safety check: Ensure we have data
+        if (runStatusArray && runStatusArray.length > 0) {
+          const status = runStatusArray[0].status;
+          
+          if (status === 'Completed') {
+            const output = runStatusArray[0].output;
+            
+            // 🔴 THIS IS THE FIX 🔴
+            // The output is { success: true, imageUrl: "..." }
+            // You MUST extract .imageUrl
+            console.log("Generation Success:", output.imageUrl); 
+            setOutputThumbnailImage(output.imageUrl); 
+            
+            setLoading(false);
+            break;
+          }
+          
+          if (status === 'Failed' || status === 'Cancelled') {
+            console.error("Generation Failed");
+            setLoading(false);
+            break;
+          }
+        }
+
+        // Wait 2 seconds before checking again
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    } catch (e) {
+      console.error("Error submitting:", e);
+      setLoading(false);
+    }
   }
   return (
     <div>
@@ -67,6 +111,21 @@ function AiThumbnailGenerator() {
 
           <p className='text-gray-400 text-center'>Turn any video into a click magnet with thumbnails that grab attention and drive views. Our AI YouTube thumbnail maker creates professional designs instantly — no designing skills needed.</p>
         </div>
+        <div>
+          {loading?<div className='w-full bg-secondary border rounded-2xl p-10 h-[250px] mt-6 flex items-center justify-center'>
+            <Loader2 className='animate-spin' />
+            <h2>Please Wait... Thumbnail is generating</h2>
+          </div>:
+              <div>
+              {outputThumbnailImage && <Image src={outputThumbnailImage} alt='Thumbnail'
+              width={500}
+              height={400}
+              className='aspect-video w-full'
+              />}
+              </div>
+          }
+        </div>
+
 
         <div className='flex gap-5 items-center p-3 border rounded-xl mt-10 bg-secondary'>
           <textarea
