@@ -2,6 +2,9 @@ import { inngest } from "@/inngest/client";
 import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import ImageKit from "imagekit";
+import { AiThumbnailTable } from "@/configs/schema";
+import { db } from "@/configs/db";
+import {eq,desc} from "drizzle-orm"
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
@@ -47,4 +50,23 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ runId: result.ids[0] });
+}
+
+// ✅ 2. GET METHOD (To Fetch List) - THIS WAS MISSING OR BROKEN
+export async function GET(req: NextRequest) {
+    const user = await currentUser();
+
+    // Safety check: Ensure user is logged in
+    if (!user?.primaryEmailAddress?.emailAddress) {
+        return NextResponse.json({ error: 'User not found' }, { status: 401 });
+    }
+
+    // Fetch records from DB where email matches current user
+    //@ts-ignore
+    const result = await db.select()
+        .from(AiThumbnailTable)
+        .where(eq(AiThumbnailTable.userEmail, user.primaryEmailAddress.emailAddress))
+        .orderBy(desc(AiThumbnailTable.id)); // Show newest first
+
+    return NextResponse.json(result);
 }

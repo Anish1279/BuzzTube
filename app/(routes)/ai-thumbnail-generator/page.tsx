@@ -5,6 +5,7 @@ import axios from 'axios';
 import { ArrowUp, ImagePlus, Loader2, User, X } from 'lucide-react'
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react'
+import ThumbnailList from './_components/ThumbnailList';
 
 function AiThumbnailGenerator() {
   const [userInput, setUserInput] = useState<string>("");
@@ -198,6 +199,7 @@ function AiThumbnailGenerator() {
         </div>
 
       </div>
+      <ThumbnailList/>
     </div>
   )
 }
