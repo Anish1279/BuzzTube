@@ -48,7 +48,8 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 <img width="1914" height="961" alt="Screenshot 2026-01-05 020630" src="https://github.com/user-attachments/assets/649439a8-d838-408d-a632-f5a801a2d73e" />
 
 
-<img width="1908" height="987" alt="Screenshot 2026-01-05 020720" src="https://github.com/user-attachments/assets/952321ac-9a28-4ccd-a86f-8a72593dc077" />
+<img width="1910" height="984" alt="image" src="https://github.com/user-attachments/assets/8e77d5e1-9bd4-4d80-a0c1-851010ed36b8" />
+
 
 ## Deploy on Vercel
 
