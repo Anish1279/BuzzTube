@@ -6,24 +6,22 @@ import { AiThumbnailTable } from "@/configs/schema";
 import { db } from "@/configs/db";
 import { eq, desc } from "drizzle-orm";
 
-// 🚀 FIX: Force this route to be dynamic to prevent build errors
+// 🛑 THIS LINE STOPS THE BUILD ERROR 🛑
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Check Authentication
     const user = await currentUser();
     if (!user) {
       return NextResponse.json({ error: "User not authenticated" }, { status: 401 });
     }
 
-    // 2. Parse Form Data
     const formData = await req.formData();
     const refImage = formData.get("refImage") as File | null;
     const faceImage = formData.get("faceImage") as File | null;
     const userInput = formData.get("userInput") as string;
 
-    // 3. Initialize ImageKit
+    // Safety check for keys
     if (!process.env.IMAGEKIT_PRIVATE_KEY) {
         throw new Error("Missing IMAGEKIT_PRIVATE_KEY in .env file");
     }
@@ -37,7 +35,6 @@ export async function POST(req: NextRequest) {
     let refImageUrl = "";
     let faceImageUrl = "";
 
-    // 4. Upload Reference Image
     if (refImage) {
       const bytes = await refImage.arrayBuffer();
       const buffer = Buffer.from(bytes);
@@ -49,7 +46,6 @@ export async function POST(req: NextRequest) {
       refImageUrl = uploadResponse.url;
     }
 
-    // 5. Upload Face Image
     if (faceImage) {
       const bytes = await faceImage.arrayBuffer();
       const buffer = Buffer.from(bytes);
@@ -61,7 +57,6 @@ export async function POST(req: NextRequest) {
       faceImageUrl = uploadResponse.url;
     }
 
-    // 6. Send to Inngest
     const result = await inngest.send({
       name: "test/generate.thumbnail",
       data: {
@@ -81,6 +76,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  // Because we added 'force-dynamic' above, this won't run during build anymore.
   const user = await currentUser();
 
   if (!user?.primaryEmailAddress?.emailAddress) {
