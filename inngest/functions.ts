@@ -6,12 +6,11 @@ import { AiThumbnailTable } from "@/configs/schema";
 import { db } from "@/configs/db";
 import moment from "moment";
 
-const imageKit = new ImageKit({
-    publicKey: process.env.IMAGEKIT_PUBLIC_KEY!,
-    privateKey: process.env.IMAGEKIT_PRIVATE_KEY!,
-    urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT!
-});
+// ❌ REMOVED TOP-LEVEL IMAGEKIT INITIALIZATION FROM HERE
+// This prevents the build error because we don't check for keys immediately.
 
+// OpenAI usually is safer at top level, but if this also crashes, 
+// let me know and we can move it too.
 export const openai = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
     apiKey: process.env.OPENROUTER_API_KEY,
@@ -27,13 +26,8 @@ export const GenerateAiThumbnail = inngest.createFunction(
         // 2. Generate AI Prompt
         const generateThumbnailPrompt = await step.run('generateThumbnailPrompt', async () => {
             const completion = await openai.chat.completions.create({
-                // ✅ KEPT YOUR ORIGINAL MODEL
                 model: "google/gemini-2.5-flash-image", 
-                
-                // ✅ FIX: Added this line to prevent 402 Error
-                // This tells the API "I only need a short answer", so it costs less.
                 max_tokens: 1000, 
-
                 messages: [
                     {
                         role: "user",
@@ -48,7 +42,7 @@ export const GenerateAiThumbnail = inngest.createFunction(
                             ...(refImageUrl ? [{
                                 "type": "image_url",
                                 "image_url": {
-                                    "url": refImageUrl, // ✅ Correct: Uses the string URL directly
+                                    "url": refImageUrl, 
                                 }
                             }] : [])
                         ] as any
@@ -62,6 +56,15 @@ export const GenerateAiThumbnail = inngest.createFunction(
 
         // 3. Generate Image & Upload (Merged Step)
         const finalImageUrl = await step.run("GenerateAndUploadImage", async () => {
+            
+            // ✅ FIX: Initialize ImageKit INSIDE the step
+            // This ensures it only runs at runtime, bypassing build errors.
+            const imageKit = new ImageKit({
+                publicKey: process.env.IMAGEKIT_PUBLIC_KEY!,
+                privateKey: process.env.IMAGEKIT_PRIVATE_KEY!,
+                urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT!
+            });
+
             const promptToUse = generateThumbnailPrompt || userInput;
 
             // Generate Raw Buffer
