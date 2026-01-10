@@ -40,7 +40,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <ClerkProvider>
+    // ⬇️ FIXED: We explicitly pass the key here to stop the build error
+    <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
       <html lang="en" suppressHydrationWarning>
         <body
           suppressHydrationWarning
@@ -64,4 +65,3 @@ export default function RootLayout({
     </ClerkProvider>
   )
 }
-
