@@ -6,6 +6,9 @@ import { AiThumbnailTable } from "@/configs/schema";
 import { db } from "@/configs/db";
 import { eq, desc } from "drizzle-orm";
 
+// 🚀 FIX: Force this route to be dynamic to prevent build errors
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     // 1. Check Authentication
@@ -21,7 +24,6 @@ export async function POST(req: NextRequest) {
     const userInput = formData.get("userInput") as string;
 
     // 3. Initialize ImageKit
-    // (Check if keys exist to avoid crashing)
     if (!process.env.IMAGEKIT_PRIVATE_KEY) {
         throw new Error("Missing IMAGEKIT_PRIVATE_KEY in .env file");
     }
@@ -35,24 +37,22 @@ export async function POST(req: NextRequest) {
     let refImageUrl = "";
     let faceImageUrl = "";
 
-    // 4. Upload Reference Image (If exists)
+    // 4. Upload Reference Image
     if (refImage) {
       const bytes = await refImage.arrayBuffer();
       const buffer = Buffer.from(bytes);
-
       const uploadResponse = await imageKit.upload({
         file: buffer,
         fileName: refImage.name,
-        folder: "/buzz-tube", // Good practice to use a folder
+        folder: "/buzz-tube",
       });
       refImageUrl = uploadResponse.url;
     }
 
-    // 5. Upload Face Image (If exists)
+    // 5. Upload Face Image
     if (faceImage) {
       const bytes = await faceImage.arrayBuffer();
       const buffer = Buffer.from(bytes);
-
       const uploadResponse = await imageKit.upload({
         file: buffer,
         fileName: faceImage.name,
@@ -63,11 +63,11 @@ export async function POST(req: NextRequest) {
 
     // 6. Send to Inngest
     const result = await inngest.send({
-      name: "test/generate.thumbnail", // ⚠️ Make sure this matches your inngest function ID exactly!
+      name: "test/generate.thumbnail",
       data: {
         userInput: userInput,
         refImageUrl: refImageUrl,
-        faceImageUrl: faceImageUrl, // Sending the Face URL too
+        faceImageUrl: faceImageUrl,
         userEmail: user?.primaryEmailAddress?.emailAddress,
       },
     });
@@ -75,7 +75,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ runId: result.ids[0] });
 
   } catch (error: any) {
-    // 🛑 LOG THE REAL ERROR HERE
     console.error("❌ API CRASHED:", error);
     return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
   }
